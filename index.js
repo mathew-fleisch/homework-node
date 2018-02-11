@@ -1,4 +1,16 @@
 'use strict'
+/**
+ * @author   Mathew Fleisch [mathew.fleisch@gmail.com]
+ * @created  2018.02.11
+ * @abstract
+ *    Download node packages from npm's "most depended-upon packages" list. By
+ *    default, the top 10 packages will be downloaded, but that number can be
+ *    adjusted with a 'COUNT' variable, at run time. If the 'COUNT' is larger
+ *    than the number of packages on each page, the package names are aggregated
+ *    before they are downloaded.
+ *
+ */
+
 
 const download_package_tarball = require('download-package-tarball')
 const package_json = require('package-json')
@@ -6,15 +18,28 @@ const request = require('request')
 const cheerio = require('cheerio')
 const async = require('async')
 
+
+// Entry point url to scrape
 const PACKAGE_URL = process.env.PACKAGE_URL || 'https://www.npmjs.com/browse/depended?offset='
+// Where the packages will be downloaded to
+const TARGET_DIRECTORY = process.env.TARGET_DIRECTORY || './packages'
+// Number of concurrent requests for each async operation
+const ASYNC_LIMIT = process.env.ASYNC_LIMIT || 10
+// npm url fails with more than one request at a time (recommend not changing)
+const SCRAPE_LIMIT = process.env.SCRAPE_LIMIT || 1
+// Debug levels: 0->off, 1->info, 2->debug
 const DEBUG = process.env.DEBUG || 0
-const TARGET_DIRECTORY = './packages'
-const ASYNC_LIMIT = 10
-const SCRAPE_LIMIT = 1 // npm url fails with more than one request at a time
+
 
 module.exports = downloadPackages
 
-
+/**
+ * This function will first grab the tarball url and then download it,
+ * to TARGET_DIRECTORY, based on a package name.
+ * @param  {array}    packages - list of package names
+ * @param  {Function} callback - Callback function
+ * @return {none}
+ */
 function getPackages(packages, callback) {
     if(DEBUG) console.log('Packages to Download: '+packages.length)
 
@@ -60,32 +85,50 @@ function getPackages(packages, callback) {
 }
 
 
+/**
+ * This function will scrape the contents of the url and return array of package names
+ * @param  {string}        url - Site to scrape for package names
+ * @param  {Function} callback - Callback function
+ * @return {array}       array - List of package names, scraped from site
+ */
 function parsePackagePage(url, callback) {
     request(url, (error, response, html) => {
         if(error) return callback(error)
 
         const packages = []
         const $ = cheerio.load(html)
-
+        // Loop over each package url by class-name
         $('.name').each((index, obj) => {
-            const package_name = obj.children[0].data
+            if(DEBUG > 1) console.log('parsing['+index+']: '+obj.children[0].data)
 
-            if(DEBUG > 1) console.log('parsing['+index+']: '+package_name)
-
-            packages.push(package_name)
+            // Save each package in local array
+            packages.push(obj.children[0].data)
         })
 
         if(packages && packages.length > 0) {
             return callback(null, packages)
         } else {
+            // TODO: Limit retries
             console.log('Page failed... Try again ['+url+']')
             parsePackagePage(url, callback)
         }
-
-        // callback(new Error('No packages found on this page: '+url))
     })
 }
 
+/**
+ * This function is the entry point for this application. It will first pull
+ * down the package names, in the order listed in PACKAGE_URL. If the 'count'
+ * variable is less than the number of packages on the first page (page_size),
+ * the list is truncated, and the packages are downloaded. Other wise, the
+ * package name list is expanded by requesting additional pages and once the
+ * list of package names is larger than count, the list is truncated to 'count',
+ * and the packages are downloaded.
+ * @param  {int}         count - Number of packages to download
+ * @param  {Function} callback - Callback function
+ * @return {callback}
+ * Note: I had to set the number-of-requests-at-one-time to 1 because npm's
+ *       site would randomly give me a page with no data.
+ */
 function downloadPackages (count, callback) {
     if(DEBUG > 1) console.log('downloadPackages('+count+',callback)')
 

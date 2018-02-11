@@ -9,9 +9,10 @@ const async = require('async')
 
 test('download', function (t) {
   t.plan(3)
-
+  const TARGET_DIRECTORY = process.env.TARGET_DIRECTORY.replace(/\/$/, '') || './packages'
+  
   const COUNT = parseInt(process.env.COUNT, 10) || 10
-  console.log('Expecting Count: '+COUNT)
+  console.log('Expecting: '+COUNT)
 
   series([
     (callback) => download(COUNT, callback),
@@ -21,7 +22,7 @@ test('download', function (t) {
   ], t.end)
 
   function verifyCount (callback) {
-    fs.readdir('./packages', function (err, files) {
+    fs.readdir(TARGET_DIRECTORY, function (err, files) {
       if (err) return callback(err);
 
       const sub_packages = [];
@@ -56,7 +57,7 @@ test('download', function (t) {
   }
 
   function verifySize (callback) {
-    folderSize('./packages', function (err, size) {
+    folderSize(TARGET_DIRECTORY, function (err, size) {
       if (err) return callback(err)
       t.ok(size / 1024 > 5 * COUNT, 'min 5k per package')
       callback()
@@ -64,7 +65,7 @@ test('download', function (t) {
   }
 
   function verifyLodash (callback) {
-    const _ = require('./packages/lodash')
+    const _ = require(TARGET_DIRECTORY+'/lodash')
     t.equal(typeof _.map, 'function', '_.map exists')
     callback()
   }
