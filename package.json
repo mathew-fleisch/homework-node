@@ -4,6 +4,8 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "download-package-tarball": "^1.0.7",
+    "download-tarball": "^1.1.0",
     "package-json": "^4.0.1",
     "request": "^2.83.0"
   },
