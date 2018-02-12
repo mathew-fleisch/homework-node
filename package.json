@@ -1,11 +1,17 @@
 {
+  "name": "eaze-programming-challenge",
+  "version": "1.0.0",
+  "description": "Download X number of packages from npm's 'most depended-upon packages' page.",
+  "main": "index.js",
   "scripts": {
     "test": "node test.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "debug-level": "^0.2.1",
     "download-package-tarball": "^1.0.7",
     "download-tarball": "^1.1.0",
+    "lodash.flatten": "^4.4.0",
     "package-json": "^4.0.1",
     "request": "^2.83.0"
   },
@@ -13,5 +19,8 @@
     "get-folder-size": "~1.0.0",
     "tape": "~4.6.0",
     "run-series": "^1.1.4"
-  }
+  },
+  "keywords": [],
+  "author": "Mathew Fleisch [mathew.fleisch@gmail.com]",
+  "license": "ISC"
 }

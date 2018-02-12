@@ -17,7 +17,9 @@ const package_json = require('package-json')
 const request = require('request')
 const cheerio = require('cheerio')
 const async = require('async')
-
+const Log = require('debug-level')
+const log = new Log('[NPM Downloader] ')
+log.log('NPM Package Downloader Started')
 
 // Entry point url to scrape
 const PACKAGE_URL = process.env.PACKAGE_URL || 'https://www.npmjs.com/browse/depended?offset='
@@ -27,11 +29,8 @@ const TARGET_DIRECTORY = process.env.TARGET_DIRECTORY || './packages'
 const ASYNC_LIMIT = process.env.ASYNC_LIMIT || 10
 // npm url fails with more than one request at a time (recommend not changing)
 const SCRAPE_LIMIT = process.env.SCRAPE_LIMIT || 1
-// Debug levels: 0->off, 1->info, 2->debug
-const DEBUG = process.env.DEBUG || 0
+// Debug levels: ERROR,INFO,DEBUG
 
-
-module.exports = downloadPackages
 
 /**
  * This function will first grab the tarball url and then download it,
@@ -41,13 +40,13 @@ module.exports = downloadPackages
  * @return {none}
  */
 function getPackages(packages, callback) {
-    if(DEBUG) console.log('Packages to Download: '+packages.length)
+    log.info('Packages to Download: '+packages.length)
 
     let package_info = []
 
     async.mapLimit(packages, ASYNC_LIMIT, (pack, cb) => {
         package_json(pack).then(json => {
-            if(DEBUG > 1) console.log('get_metadata('+json['name']+')')
+            log.debug('get_metadata('+json['name']+')')
 
             package_info.push({
                 'name':json['name'],
@@ -59,7 +58,7 @@ function getPackages(packages, callback) {
     }, (error) => {
         if(error) return callback(error)
 
-        if(DEBUG > 1) console.log('Package Info: ',package_info)
+        log.debug('Package Info: ',package_info)
 
         let download_count = 0
         async.mapLimit(package_info, ASYNC_LIMIT, (pack, cb) => {
@@ -68,12 +67,12 @@ function getPackages(packages, callback) {
                 dir: TARGET_DIRECTORY
             }).then(() => {
                 download_count++
-                console.log('Package Downloaded['+download_count+']: '+pack['name']
+                log.log('Package Downloaded['+download_count+']: '+pack['name']
                     +' ('+pack['version']+')'
                 )
                 cb()
             }).catch(err => {
-              console.log('The file could not be downloaded properly',err)
+              log.info('The file could not be downloaded properly',err)
               return cb(err)
             })
         }, (err) => {
@@ -99,7 +98,7 @@ function parsePackagePage(url, callback) {
         const $ = cheerio.load(html)
         // Loop over each package url by class-name
         $('.name').each((index, obj) => {
-            if(DEBUG > 1) console.log('parsing['+index+']: '+obj.children[0].data)
+            log.debug('parsing['+index+']: '+obj.children[0].data)
 
             // Save each package in local array
             packages.push(obj.children[0].data)
@@ -109,7 +108,7 @@ function parsePackagePage(url, callback) {
             return callback(null, packages)
         } else {
             // TODO: Limit retries
-            console.log('Page failed... Try again ['+url+']')
+            log.info('Page failed... Try again ['+url+']')
             parsePackagePage(url, callback)
         }
     })
@@ -119,7 +118,7 @@ function parsePackagePage(url, callback) {
  * This function is the entry point for this application. It will first pull
  * down the package names, in the order listed in PACKAGE_URL. If the 'count'
  * variable is less than the number of packages on the first page (page_size),
- * the list is truncated, and the packages are downloaded. Other wise, the
+ * the list is truncated, and the packages are downloaded. Otherwise, the
  * package name list is expanded by requesting additional pages and once the
  * list of package names is larger than count, the list is truncated to 'count',
  * and the packages are downloaded.
@@ -130,7 +129,7 @@ function parsePackagePage(url, callback) {
  *       site would randomly give me a page with no data.
  */
 function downloadPackages (count, callback) {
-    if(DEBUG > 1) console.log('downloadPackages('+count+',callback)')
+    log.debug('downloadPackages('+count+',callback)')
 
     let paged_url = PACKAGE_URL
     let page_offset = 1
@@ -141,12 +140,12 @@ function downloadPackages (count, callback) {
 
         // Set the number of packages per page
         const page_size = packages.length
-        if(DEBUG) console.log('packages per page: '+page_size)
+        log.info('packages per page: '+page_size)
 
         // If the requested number of packages is larger than the page size, grab the rest
         if(count < page_size) {
             // Multiple page requests not needed. Get packages
-            if(DEBUG) console.log('count:'+count+' < page_size:'+page_size+'  -> No pagination required')
+            log.info('count:'+count+' < page_size:'+page_size+'  -> No pagination required')
             packages = packages.slice(0, count)
 
             return getPackages(packages, (error) => {
@@ -155,17 +154,17 @@ function downloadPackages (count, callback) {
                 return callback()
             })
         } else {
-            if(DEBUG) console.log('count:'+count+' > page_size:'+page_size+'  -> Pagination required')
+            log.info('count:'+count+' > page_size:'+page_size+'  -> Pagination required')
 
             // Get the number of pages (-1 because the first page is already in memory)
             page_offset = Math.ceil(count / page_size) - 1
-            if(DEBUG) console.log('page_offset => round-up(count:'+count+' / page_size:'+page_size+' -> '+(count / page_size).toFixed(2)+') - 1 = '+page_offset)
+            log.info('page_offset => round-up(count:'+count+' / page_size:'+page_size+' -> '+(count / page_size).toFixed(2)+') - 1 = '+page_offset)
 
             // Build array of urls to grab
             let urls = []
             for(let page = 1; page <= page_offset; page++) {
                 let offset = (page * page_size)
-                if(DEBUG) console.log('Current offset => (page:'+page+' * page_size:'+page_size+') = '+offset)
+                log.info('Current offset => (page:'+page+' * page_size:'+page_size+') = '+offset)
 
                 let url = PACKAGE_URL+offset
                 urls.push(url)
@@ -173,7 +172,7 @@ function downloadPackages (count, callback) {
 
             // Get each page in array
             async.mapLimit(urls, SCRAPE_LIMIT, (url, cb) => {
-                if(DEBUG) console.log('url: '+url)
+                log.info('url: '+url)
                 parsePackagePage(url, (error, more_packages) => {
                     if(error) return cb(error)
 
@@ -193,4 +192,7 @@ function downloadPackages (count, callback) {
         }
     })
 }
+
+
+module.exports = downloadPackages
 
