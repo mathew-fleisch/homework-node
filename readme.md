@@ -8,7 +8,17 @@ This [challenge](challenge.md) required creating a node application that would d
  - [download-package-tarball](https://www.npmjs.com/package/download-package-tarball)
  - [package-json](https://www.npmjs.com/package/package-json)
  - [request](https://www.npmjs.com/package/request)
+ - [debug-level](https://www.npmjs.com/package/debug-level)
  - Existance of page: ["most depended-upon packages"](https://www.npmjs.com/browse/depended?offset=)
+
+ **Test Dependencies**
+ - [async](https://www.npmjs.com/package/async)
+ - [get-folder-size](https://www.npmjs.com/package/get-folder-size)
+ - [fs-extra](https://www.npmjs.com/package/fs-extra)
+ - [lodash.flatten](https://www.npmjs.com/package/lodash.flatten)
+ - [path](https://www.npmjs.com/package/path)
+ - [run-series](https://www.npmjs.com/package/run-series)
+ - [tape](https://www.npmjs.com/package/tape)
 
 
 ## Configuration
@@ -42,7 +52,7 @@ This [challenge](challenge.md) required creating a node application that would d
 	  LOG [NPM Downloader]  Package Downloaded[8]: async (2.6.0) +576ms
 	  LOG [NPM Downloader]  Package Downloaded[9]: moment (2.20.1) +1s
 	  LOG [NPM Downloader]  Package Downloaded[10]: lodash (4.17.5) +4s
-	ok 1 has 10 files
+	ok 1 files found: 55 (scoped:"0" + unscoped:"10")
 	ok 2 min 5k per package
 	ok 3 _.map exists
 
@@ -137,7 +147,7 @@ This [challenge](challenge.md) required creating a node application that would d
 	  LOG [NPM Downloader]  Package Downloaded[53]: core-js (2.5.3) +3s
 	  LOG [NPM Downloader]  Package Downloaded[54]: @angular/common (5.2.4) +8s
 	  LOG [NPM Downloader]  Package Downloaded[55]: rxjs (5.5.6) +9s
-	ok 1 has 55 files
+	ok 1 files found: 55 (scoped:"2" + unscoped:"53")
 	ok 2 min 5k per package
 	ok 3 _.map exists
 
