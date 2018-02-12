@@ -20,6 +20,28 @@ This [challenge](challenge.md) required creating a node application that would d
  - [run-series](https://www.npmjs.com/package/run-series)
  - [tape](https://www.npmjs.com/package/tape)
 
+## Sample Installation (docker)
+	# Clone repo locally
+	git clone https://github.com/mathew-fleisch/homework-node.git
+
+	# Move to repo
+	cd homework-node
+
+	# Get container/image
+	docker pull node:8
+
+	# Run container (* change node:8 to node8:cached after docker commit)
+	docker run -it -v $(pwd):/app node:8 bash
+
+	# Update container (inside docker container)
+	apt-get update && apt-get install -y npm && cd /app && npm install
+
+	# Save container state (from host) *optional
+	docker commit CONTAINER-ID node8:cached
+
+	# Run code (inside docker container)
+	npm test
+
 
 ## Configuration
 	ASYNC_LIMIT      -> Number of concurrent requests for each async operation (default:10)
